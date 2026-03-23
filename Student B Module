@@ -1,0 +1,210 @@
+"""
+wordle_feedback.py  —  Student B Module
+Guess Evaluation & Feedback for Wordle Clone
+
+Public API
+----------
+evaluate_guess(guess: str, target: str) -> list[dict]
+    Returns a list of 5 result dicts, one per letter.
+
+format_feedback(results: list[dict]) -> str
+    Converts results into the symbol string shown to the player.
+
+update_guessed_letters(guessed: dict, results: list[dict]) -> dict
+    Merges new result statuses into the running letter-tracker dict.
+
+display_guessed_letters(guessed: dict) -> str
+    Renders the A-Z tracker as a compact string.
+
+Result dict schema
+------------------
+{
+    "letter": str,          # the guessed letter (uppercase)
+    "status": str,          # "correct" | "misplaced" | "absent"
+}
+
+Symbol coding (terminal-safe, no colour required)
+--------------------------------------------------
+  [X]  – correct letter, correct position
+  (x)  – correct letter, wrong position
+   _   – letter not in the word
+"""
+
+# ---------------------------------------------------------------------------
+# Core evaluation
+# ---------------------------------------------------------------------------
+
+def evaluate_guess(guess: str, target: str) -> list:
+    """
+    Compare *guess* against *target* and return per-letter result dicts.
+
+    Duplicate-letter handling follows the official Wordle rules:
+      1. Exact matches are locked in first.
+      2. Remaining target letters are matched left-to-right for misplaced
+         status, but each target letter can only account for one guess letter.
+
+    Parameters
+    ----------
+    guess  : 5-letter uppercase string (already validated by Student A)
+    target : 5-letter uppercase string
+
+    Returns
+    -------
+    list of 5 dicts  {"letter": str, "status": str}
+    """
+    if len(guess) != 5 or len(target) != 5:
+        raise ValueError("Both guess and target must be exactly 5 letters.")
+
+    guess  = guess.upper()
+    target = target.upper()
+
+    results          = [None] * 5          # final result per position
+    target_remaining = list(target)        # pool of unmatched target letters
+
+    # --- Pass 1: mark exact matches -----------------------------------------
+    for i in range(5):
+        if guess[i] == target[i]:
+            results[i] = {"letter": guess[i], "status": "correct"}
+            target_remaining[i] = None     # consumed – can't match again
+
+    # --- Pass 2: misplaced or absent ----------------------------------------
+    for i in range(5):
+        if results[i] is not None:         # already resolved as correct
+            continue
+
+        letter = guess[i]
+        if letter in target_remaining:
+            results[i] = {"letter": letter, "status": "misplaced"}
+            # consume the *first* occurrence in the remaining pool
+            target_remaining[target_remaining.index(letter)] = None
+        else:
+            results[i] = {"letter": letter, "status": "absent"}
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Feedback formatting
+# ---------------------------------------------------------------------------
+
+_STATUS_SYMBOLS = {
+    "correct":   "[{letter}]",
+    "misplaced": "({letter})",
+    "absent":    "_",
+}
+
+def format_feedback(results: list) -> str:
+    """
+    Turn a list of result dicts into a human-readable feedback string.
+
+    Example
+    -------
+    >>> evaluate_guess("CRANE", "CARES")
+    → "[C] (R) (A) _ (E)"
+    """
+    parts = []
+    for r in results:
+        template = _STATUS_SYMBOLS[r["status"]]
+        parts.append(template.format(letter=r["letter"]))
+    return "  ".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Letter tracker
+# ---------------------------------------------------------------------------
+
+# Possible tracker states (ordered from least to most informative)
+_STATE_PRIORITY = {"unknown": 0, "absent": 1, "misplaced": 2, "correct": 3}
+
+def build_guessed_letters() -> dict:
+    """Return a fresh A-Z tracker with every letter marked 'unknown'."""
+    return {chr(c): "unknown" for c in range(ord("A"), ord("Z") + 1)}
+
+
+def update_guessed_letters(guessed: dict, results: list) -> dict:
+    """
+    Merge new result statuses into *guessed* (in-place update + return).
+
+    A letter's status only ever improves (unknown → absent → misplaced →
+    correct), never regresses.  This matters when a letter appears twice
+    in a single guess with different statuses.
+    """
+    for r in results:
+        letter     = r["letter"]
+        new_status = r["status"]
+        old_status = guessed.get(letter, "unknown")
+
+        if _STATE_PRIORITY[new_status] > _STATE_PRIORITY[old_status]:
+            guessed[letter] = new_status
+
+    return guessed
+
+
+def display_guessed_letters(guessed: dict) -> str:
+    """
+    Render the A-Z tracker as two compact rows with inline status markers.
+
+    Legend shown beneath the grid:
+        [X] correct   (x) misplaced   _ absent   ·  unknown
+    """
+    rows   = [list("ABCDEFGHIJKLM"), list("NOPQRSTUVWXYZ")]
+    output = []
+
+    for row in rows:
+        cells = []
+        for letter in row:
+            status = guessed[letter]
+            if status == "correct":
+                cells.append(f"[{letter}]")
+            elif status == "misplaced":
+                cells.append(f"({letter})")
+            elif status == "absent":
+                cells.append(f" _ ")
+            else:                          # unknown
+                cells.append(f" {letter} ")
+        output.append(" ".join(cells))
+
+    output.append("Legend:  [X] correct   (X) misplaced   _ absent   X unknown")
+    return "\n".join(output)
+
+
+# ---------------------------------------------------------------------------
+# Quick self-test  (run: python wordle_feedback.py)
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    # ----- Test 1: basic case -----
+    g, t = "CRANE", "CARES"
+    res  = evaluate_guess(g, t)
+    print(f"Guess: {g}  |  Target: {t}")
+    print("Feedback:", format_feedback(res))
+    # Expected: [C] (R) (A) _  (E)  → C correct, R misplaced, A misplaced, N absent, E misplaced
+    print()
+
+    # ----- Test 2: duplicate letters in guess -----
+    g, t = "SPEED", "CREEP"
+    res  = evaluate_guess(g, t)
+    print(f"Guess: {g}  |  Target: {t}")
+    print("Feedback:", format_feedback(res))
+    # S→absent, P→misplaced, E→correct(pos2 matches pos3 of CREEP? no)
+    # Let's trace: target=CREEP, guess=SPEED
+    # Pass1 exact: pos0 S≠C, pos1 P≠R, pos2 E=E✓, pos3 E≠E(pos3 target=E)→ pos3 E=E✓, pos4 D≠P
+    # remaining after pass1: [C,R,_,_,P]
+    # pass2: S not in [C,R,P]→absent; P in [C,R,P]→misplaced(consume P)
+    print()
+
+    # ----- Test 3: perfect guess -----
+    g, t = "HELLO", "HELLO"
+    res  = evaluate_guess(g, t)
+    print(f"Guess: {g}  |  Target: {t}")
+    print("Feedback:", format_feedback(res))
+    print()
+
+    # ----- Test 4: letter tracker -----
+    tracker = build_guessed_letters()
+    for guess_word, target_word in [("CRANE", "CARES"), ("SPEED", "CARES")]:
+        r = evaluate_guess(guess_word, target_word)
+        update_guessed_letters(tracker, r)
+
+    print("Letter tracker after two guesses:")
+    print(display_guessed_letters(tracker))
