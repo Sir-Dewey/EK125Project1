@@ -1,0 +1,72 @@
+# Student B Module
+# Guess Evaluation & Feedback
+# Tracks letters guessed across the game
+guessed_letters = set()
+
+
+def evaluate_guess(guess, target):
+    """
+    Compare guess to target word and return feedback list.
+
+    Feedback symbols:
+    [X] = correct letter, correct position
+    (X) = correct letter, wrong position
+    _   = incorrect letter
+
+    Handles duplicate letters correctly.
+    """
+
+    guess = guess.upper()
+    target = target.upper()
+
+    feedback = ["_"] * 5
+    target_letters = list(target)
+
+    # ---- First Pass: Correct position ----
+    for i in range(5):
+        if guess[i] == target[i]:
+            feedback[i] = f"[{guess[i]}]"
+            target_letters[i] = None  # Remove matched letter
+
+    # ---- Second Pass: Wrong position ----
+    for i in range(5):
+        if feedback[i] == "_":
+            if guess[i] in target_letters:
+                feedback[i] = f"({guess[i]})"
+                target_letters[target_letters.index(guess[i])] = None
+
+    return feedback
+
+
+def format_feedback(feedback):
+    """
+    Convert feedback list into printable string.
+    """
+    return " ".join(feedback)
+
+
+def update_guessed_letters(guess):
+    """
+    Add letters from guess to guessed letter tracker.
+    """
+    for letter in guess:
+        guessed_letters.add(letter.upper())
+
+
+def display_guessed_letters():
+    """
+    Show letters that have been guessed so far.
+    """
+
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    display = []
+
+    for letter in alphabet:
+        if letter in guessed_letters:
+            display.append(letter)
+        else:
+            display.append("_")
+
+    print("\nLetters guessed:")
+    print(" ".join(display))
