@@ -1,0 +1,113 @@
+# Student C: Game State & Statistics
+
+# - Track number of attempts (max 6)
+# - Display previous guesses with feedback after each turn
+# - Determine win/loss conditions
+# - Track games played, win percentage
+# - Track guess distribution (won on guess 1, 2, 3, etc.)
+# - Current win streak
+# - Display a simple alphabet tracker showing which letters are still available
+
+
+MAX_ATTEMPTS = 6
+ALPHABET = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+
+current_attempts = 0
+
+player_stats = {
+    "games_played": 0,
+    "games_won": 0,
+    "guess_distribution": {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0
+    },
+    "current_streak" : 0
+}
+
+# - Track number of attempts (max 6)
+
+def addAttempt():
+    global current_attempts
+    current_attempts += 1
+
+def hasAttempts():
+    global current_attempts
+    return current_attempts < MAX_ATTEMPTS
+
+# - Display previous guesses with feedback after each turn
+def displayPreviousGuess(board, max_attempts):
+    """displays previous guess with feedback"""
+    print("\n--- WORDLE ---")
+
+    for feedback in board:
+        print(feedback)
+
+    remaining = max_attempts - len(board)
+
+    for space in range(remaining):
+        print("_ _ _ _ _")
+
+# - Determine win/loss conditions
+def checkWin(latest_feedback, current_attempts, max_attempts):
+    """checks if the game won"""
+    winning_word = "[X][X][X][X][X]"
+
+    if latest_feedback == winning_word:
+        return "win"
+    elif current_attempts >= max_attempts:
+        return "loss"
+    else:
+        return "continue"
+
+# - Track games played, win percentage
+def recordGameStats(stats, is_win):
+    """records game stats to database"""
+    stats["games_played"] += 1
+    if is_win:
+        stats["games_won"] += 1
+
+    return stats
+
+def computeWinPercentage(stats):
+    """computes percentage of games won"""
+    if stats["games_played"] == 0:
+        return 0.0
+    win_percentage = stats["games_won"] / stats["games_played"] * 100
+    return win_percentage
+
+# - Track guess distribution (won on guess 1, 2, 3, etc.)
+
+def recordWinPercentage(stats, win_attempt):
+    """records games won"""
+    if 1 <= win_attempt <= 6:
+        stats["guess_distribution"][win_attempt] += 1
+    return stats
+
+# - Current win streak
+
+def updateWinStreak(stats, is_win):
+    """updates win streak"""
+    if is_win:
+        stats["current_streak"] += 1
+    else:
+        stats["current_streak"] = 0
+    return stats
+
+# - Display a simple alphabet tracker showing which letters are still available
+def updateAvailableLetters(available_letters, guessed_word):
+    """updates available letters"""
+    for letter in guessed_word.upper():
+        if letter in available_letters:
+            available_letters.remove(letter)
+
+    return available_letters
+
+def displayAvailableLetters(available_letters):
+    """displays available letters"""
+    total_available_letters = " ".join(available_letters)
+
+    print(f"Available letters: {total_available_letters}")
