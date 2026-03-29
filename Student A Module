@@ -32,8 +32,8 @@ EASY_WORDS = [word for word in WORD_BANK if word not in [
 HARD_WORDS = [word for word in WORD_BANK if word not in EASY_WORDS]
 
 
-#  Normalize input
-def normalize_input(word):
+#  Clean input
+def clean_input(word):
     return word.strip().upper()
 
 
@@ -49,7 +49,7 @@ def is_real_word(word, word_list):
 
 #  Full validation
 def validate_guess(input_word, word_list):
-    word = normalize_input(input_word)
+    word = clean_input(input_word)
 
     if not is_valid_length(word):
         return False, "Word must be exactly 5 letters."
