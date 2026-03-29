@@ -1,6 +1,6 @@
 import random
 
-# ✅ 200-word bank
+# 200-word bank
 WORD_BANK = [
     "APPLE","BRUSH","CHARM","DREAM","ELDER","FLAME","GRAPE","HOUSE","INDEX","JAUNT",
     "KNEEL","LEMON","MAPLE","NOVEL","OCEAN","PAINT","QUIRK","RIVER","SLATE","TIGER",
@@ -24,7 +24,7 @@ WORD_BANK = [
     "TRAIL","SWEET","DRIVE","CLOUD","STONE","SHARE","LIGHT"
 ]
 
-# 🎚️ Difficulty lists (simple split)
+#  Difficulty lists (simple split)
 EASY_WORDS = [word for word in WORD_BANK if word not in [
     "XENON","XYLEM","XEROX","KVELL","QUERN","XYLAR","ZAPPY","XENIC","XENIA"
 ]]
@@ -32,22 +32,22 @@ EASY_WORDS = [word for word in WORD_BANK if word not in [
 HARD_WORDS = [word for word in WORD_BANK if word not in EASY_WORDS]
 
 
-# 🔤 Normalize input
+#  Normalize input
 def normalize_input(word):
     return word.strip().upper()
 
 
-# 📏 Check word length
+#  Check word length
 def is_valid_length(word):
     return len(word) == 5
 
 
-# 📚 Check if word exists
+#  Check if word exists
 def is_real_word(word, word_list):
     return word in word_list
 
 
-# ✅ Full validation
+#  Full validation
 def validate_guess(input_word, word_list):
     word = normalize_input(input_word)
 
@@ -63,7 +63,7 @@ def validate_guess(input_word, word_list):
     return True, word
 
 
-# 🎲 Select word by difficulty
+#  Select word by difficulty
 def select_word(difficulty="easy"):
     if difficulty == "easy":
         return random.choice(EASY_WORDS)
@@ -73,7 +73,7 @@ def select_word(difficulty="easy"):
         return random.choice(WORD_BANK)
 
 
-# 🧪 Example test run
+#  Example test run
 if __name__ == "__main__":
     mode = input("Choose difficulty (easy/hard): ").lower()
     target_word = select_word(mode)
